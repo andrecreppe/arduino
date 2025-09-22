@@ -23,25 +23,35 @@ HardwareSerial GPSserial(1); // use UART1 on ESP32
 
 // -------------------- Geofence rectangle --------------------
 // Define four corners of the runway exclusion zone (lat, lon in degrees)
+// #define WARNING_LENGTH 150
+#define WARNING_LENGTH 35
+
 struct Point {
   double lat;
   double lon;
 };
 
-// GPX
+// Embraer GPX - Runway 02-20
 // Point runway[4] = {
 //   { -21.751308, -48.405645 }, // NW
 //   { -21.751315, -48.405206 }, // NE
 //   { -21.796440, -48.404396 }, // SE
 //   { -21.796451, -48.404831 }, // SW
 // };
-// Sanca USP
+// Embraer GPX - Alpha Yard
 Point runway[4] = {
-  { -22.002662, -47.900222 }, // NW
-  { -22.002654, -47.896139 }, // NE
-  { -22.011453, -47.895683 }, // SE
-  { -22.011480, -47.899861 }, // SW
+  { -21.762005, -48.403078 }, // NW
+  { -21.761996, -48.402081 }, // NE
+  { -21.763241, -48.402057 }, // SE
+  { -21.763264, -48.403050 }, // SW
 };
+// USP São Carlos - Home Test Example
+// Point runway[4] = {
+//   { -22.002662, -47.900222 }, // NW
+//   { -22.002654, -47.896139 }, // NE
+//   { -22.011453, -47.895683 }, // SE
+//   { -22.011480, -47.899861 }, // SW
+// };
 
 // -------------------- Timers --------------------
 unsigned long lastValidFixMillis = 0;
@@ -222,7 +232,7 @@ void loop() {
       digitalWrite(LED_YELLOW, LOW);
       digitalWrite(LED_RED, HIGH);
       digitalWrite(BUZZER, HIGH); // constant
-    } else if (dist <= 150) {
+    } else if (dist <= WARNING_LENGTH) {
       digitalWrite(LED_GREEN, LOW);
       digitalWrite(LED_RED, LOW);
       digitalWrite(LED_YELLOW, HIGH);

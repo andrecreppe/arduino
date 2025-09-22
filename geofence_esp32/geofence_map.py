@@ -1,16 +1,28 @@
+import os
+import webbrowser
 import folium
 from pyproj import Transformer
 from shapely.geometry import Polygon
 
+# BUFFER_SIZE = 150
+BUFFER_SIZE = 35
+
 # Runway polygon (lat, lon)
-# GPX
+# Embraer GPX - Runway 02-20
+# runway = [
+#     (-21.751308, -48.405645),  # NW
+#     (-21.751315, -48.405206),  # NE
+#     (-21.796440, -48.404396),  # SE
+#     (-21.796451, -48.404831),  # SW
+# ]
+# Embraer GPX - Alpha Yard
 runway = [
-    (-21.751308, -48.405645),  # NW
-    (-21.751315, -48.405206),  # NE
-    (-21.796440, -48.404396),  # SE
-    (-21.796451, -48.404831),  # SW
+    (-21.762005, -48.403078),  # NW
+    (-21.761996, -48.402081),  # NE
+    (-21.763241, -48.402057),  # SE
+    (-21.763264, -48.403050),  # SW
 ]
-# USP SÃO CARLOS
+# USP SÃO CARLOS (test)
 # runway = [
 #     (-22.002662, -47.900222),  # NW
 #     (-22.002654, -47.896139),  # NE
@@ -35,7 +47,7 @@ def to_latlon(x, y):
 runway_m = Polygon([to_meters(lat, lon) for lat, lon in runway])
 
 # Buffer by 150 m to create warning zone
-warning_m = runway_m.buffer(150)
+warning_m = runway_m.buffer(BUFFER_SIZE)
 
 # Convert back to lat/lon
 warning = [to_latlon(x, y) for x, y in warning_m.exterior.coords]
@@ -51,7 +63,13 @@ folium.Polygon(runway, color="red", fill=True, fill_opacity=0.4,
 
 # Add warning polygon (orange)
 folium.Polygon(warning, color="orange", fill=True, fill_opacity=0.2,
-               popup="150m Warning Zone").add_to(m)
+               popup=f"{BUFFER_SIZE}m Warning Zone").add_to(m)
 
-m.save("geofence_map.html")
-print(">> Map saved as geofence_map.html — open it in your browser.")
+# Generate HTML file
+filename = "geofence_map.html"
+m.save(filename)
+
+# Open after saving
+filepath = os.path.join(os.getcwd(), filename)
+
+webbrowser.open_new_tab(f'file:///{filepath}')
