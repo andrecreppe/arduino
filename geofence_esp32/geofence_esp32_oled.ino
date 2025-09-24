@@ -1,13 +1,13 @@
 #include <Wire.h>
-#include <LiquidCrystal_I2C.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #include <TinyGPS++.h>
 #include <HardwareSerial.h>
 
-// -------------------- LCD Display setup --------------------
-#define LCD_COLUMNS 20
-#define LDC_ROWS 2
-#define LCD_ADDRESS 0x27
-LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLUMNS, LDC_ROWS);
+// -------------------- OLED Display setup --------------------
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 // -------------------- GPS setup --------------------
 TinyGPSPlus gps;
@@ -127,6 +127,52 @@ double distanceToRectangle(double lat, double lon) {
   return minDist;
 }
 
+// -------------------- Helpers: globe animation --------------------
+// Globe animation vars
+float angle = 0.0;
+const float radius = 20.0;
+const int centerX = SCREEN_WIDTH / 2;
+const int centerY = (SCREEN_HEIGHT + 16) / 2; // push globe lower so top 16px yellow band is free
+
+// Functions for globe wireframe
+void drawLatitude(int lat, float rotAngle) {
+  for (int lon = 0; lon < 360; lon += 10) {
+    float x1, y1, x2, y2;
+    sphereToScreen(lat, lon, rotAngle, x1, y1);
+    sphereToScreen(lat, lon + 10, rotAngle, x2, y2);
+    oled.drawLine((int)x1, (int)y1, (int)x2, (int)y2, SSD1306_WHITE);
+  }
+}
+
+void drawLongitude(int lon, float rotAngle) {
+  for (int lat = -90; lat < 90; lat += 10) {
+    float x1, y1, x2, y2;
+    sphereToScreen(lat, lon, rotAngle, x1, y1);
+    sphereToScreen(lat + 10, lon, rotAngle, x2, y2);
+    oled.drawLine((int)x1, (int)y1, (int)x2, (int)y2, SSD1306_WHITE);
+  }
+}
+
+void drawGlobe() {
+  for (int lat = -60; lat <= 60; lat += 30) {
+    drawLatitude(lat, angle);
+  }
+  for (int lon = 0; lon < 360; lon += 30) {
+    drawLongitude(lon, angle);
+  }
+}
+
+void sphereToScreen(float lat, float lon, float rotAngle, float &x, float &y) {
+  float latRad = radians(lat);
+  float lonRad = radians(lon + rotAngle);
+
+  float X = radius * cos(latRad) * cos(lonRad);
+  float Y = radius * sin(latRad);
+
+  x = centerX + X;
+  y = centerY + Y;
+}
+
 
 // -------------------- Setup --------------------
 void setup() {
@@ -135,12 +181,13 @@ void setup() {
   // GPS
   GPSserial.begin(9600, SERIAL_8N1, RXD2, TXD2);
 
-  // LCD Display
-  lcd.init();
-  lcd.backlight();
-
-  lcd.setCursor(0,0);
-  lcd.print("<!< GPX RIAD >!>");
+  // Oled Display
+  if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println("SSD1306 OLED allocation failed");
+    for (;;);
+  }
+  oled.clearDisplay();
+  oled.display();
 
   // LEDs and buzzer
   pinMode(LED_GREEN, OUTPUT);
@@ -171,7 +218,7 @@ void loop() {
   bool gotRecentFix = (millis() - lastValidFixMillis < GPS_FIX_TIMEOUT);
   bool hasFreshFix = everHadFix && gotRecentChars && gotRecentFix;
 
-  lcd.clear(); 
+  oled.clearDisplay();
 
   if (hasFreshFix) {
     double lat = gps.location.lat();
@@ -183,64 +230,82 @@ void loop() {
     // Calculate distance to rectangle
     double dist = distanceToRectangle(lat, lon);
 
-    // Display Text
-    lcd.setCursor(0,1);
-    lcd.print("DIST: ");
-    lcd.print(dist, 1);
-    lcd.print(" m");
+    // Display info
+    oled.setTextSize(1);
+    oled.setTextColor(SSD1306_WHITE);
 
-    lcd.setCursor(0,0);
-    lcd.print("GPS OK - ");
+    // Yellow zone (top band)
+    // Date
+    oled.setCursor(0, 0);
+    oled.printf("%02d/%02d/%02d", gps.date.day(), gps.date.month(), gps.date.year());
+    // Satellites count
+    oled.setCursor(85, 0);
+    oled.printf("Sat: %02d", gps.satellites.value());
+    // Time
+    oled.setCursor(0, 8);
+    oled.printf("%02d:%02d:%02d (UTC)", gps.time.hour(), gps.time.minute(), gps.time.second());
+
+    // Blue zone
+    // Coords
+    oled.setCursor(0, 20);
+    oled.print("Lat: "); oled.println(gps.location.lat(), 6);
+    oled.setCursor(0, 30);
+    oled.print("Lng: "); oled.println(gps.location.lng(), 6);
+    // Speed
+    oled.setCursor(0, 40);
+    oled.print("Spd: "); oled.print(gps.speed.kmph()); oled.println(" km/h");
+    // Distance info
+    oled.setCursor(0, 55);
+    oled.printf(">> DIST: %.1f m", dist);
 
     // LED + Buzzer logic
     if (dist == 0) {
-      lcd.print("PISTA!");
-      // Green Light
       digitalWrite(LED_GREEN, LOW);
       digitalWrite(LED_YELLOW, LOW);
       digitalWrite(LED_RED, HIGH);
-      // Beeping buzzer - 4 Hz
-      digitalWrite(LED_PIN, ((millis() / 250) % 2 == 0) ? HIGH : LOW);
+      digitalWrite(BUZZER, HIGH); // constant
     } else if (dist <= WARNING_RADIUS) {
-      lcd.print("ATENCAO!");
-      // Yellow Light
       digitalWrite(LED_GREEN, LOW);
       digitalWrite(LED_RED, LOW);
       digitalWrite(LED_YELLOW, HIGH);
-      // Beeping buzzer - 2 Hz
-      digitalWrite(LED_PIN, ((millis() / 500) % 2 == 0) ? HIGH : LOW);
+      // Beeping buzzer
+      if ((millis() / 500) % 2 == 0) {
+        digitalWrite(BUZZER, HIGH);
+      } else {
+        digitalWrite(BUZZER, LOW);
+      }
     } else {
-      lcd.print("LIVRE");
-      // Red Light
       digitalWrite(LED_GREEN, HIGH);
       digitalWrite(LED_YELLOW, LOW);
       digitalWrite(LED_RED, LOW);
-      // No buzzer
       digitalWrite(BUZZER, LOW);
     }
 
   } else {
     // Searching for satellites
-    int elapsed = (millis() / 1000) % 4;
+    unsigned long elapsed = millis() / 1000;
 
     // Display info
-    lcd.setCursor(0,1);
-    if (elapsed == 0) {
-      lcd.print("STARTING GPS");
-    } else if (elapsed == 1) {
-      lcd.print("STARTING GPS.");
-    } else if (elapsed == 2) {
-      lcd.print("STARTING GPS..");
-    } else if (elapsed == 3) {
-      lcd.print("STARTING GPS...");
-    }
+    oled.setTextSize(1);
+    oled.setTextColor(SSD1306_WHITE);
+    // Yellow zone (top band)
+    oled.setCursor(0, 0);
+    oled.print("Searching sats...");
+    oled.setCursor(0, 8);
+    oled.printf("Elapsed: %ds", elapsed);
 
     // Reset outputs
     digitalWrite(LED_GREEN, LOW);
     digitalWrite(LED_YELLOW, LOW);
     digitalWrite(LED_RED, LOW);
     digitalWrite(BUZZER, LOW);
+
+    // Globe animation in lower part
+    drawGlobe();
+    angle += 5;
+    if (angle >= 360) angle = 0;
   }
 
+  oled.display();
   delay(100);
 }
