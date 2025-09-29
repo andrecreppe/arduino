@@ -59,7 +59,7 @@ folium.Polygon(warning, color="orange", fill=True, fill_opacity=0.2,
                popup=f"{WARNING_RADIUS}m Warning Zone").add_to(m)
 
 # Generate HTML file
-filename = "geofence_map.html"
+filename = "gf_map.html"
 m.save(filename)
 
 # Open after saving

@@ -2,12 +2,16 @@
 #include <LiquidCrystal_I2C.h>
 #include <TinyGPS++.h>
 #include <HardwareSerial.h>
+#include "geofence_functions.h"
+
 
 // -------------------- LCD Display setup --------------------
 #define LCD_COLUMNS 20
 #define LDC_ROWS 2
 #define LCD_ADDRESS 0x27
+// SDA = 21 ; SCL = 22
 LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLUMNS, LDC_ROWS);
+
 
 // -------------------- GPS setup --------------------
 TinyGPSPlus gps;
@@ -15,20 +19,16 @@ HardwareSerial GPSserial(1); // use UART1 on ESP32
 #define RXD2 16
 #define TXD2 17
 
-// -------------------- LEDs & Buzzer --------------------
+
+// -------------------- LEDs, Buzzer and BUttons --------------------
 #define LED_GREEN 25
 #define LED_YELLOW 26
 #define LED_RED 27
 #define BUZZER 14
+#define BTN_MUTE 34
+
 
 // -------------------- Geofence rectangle --------------------
-
-// Define four corners of the runway exclusion zone (lat, lon in degrees)
-struct Point {
-  double lat;
-  double lon;
-};
-
 // Point runway[4] = {
 //   // Embraer GPX <> Runway 02-20
 //   { -21.751308, -48.405645 }, // NW
@@ -36,6 +36,7 @@ struct Point {
 //   { -21.796440, -48.404396 }, // SE
 //   { -21.796451, -48.404831 }, // SW
 // };
+
 Point runway[4] = {
   // Embraer GPX <> Alpha Yard
   { -21.762005, -48.403078 }, // NW
@@ -44,88 +45,18 @@ Point runway[4] = {
   { -21.763264, -48.403050 }, // SW
 };
 
-// #define WARNING_RADIUS 150
 #define WARNING_RADIUS 35
 
 
-// -------------------- Timers --------------------
+// -------------------- Variables: Timers --------------------
 unsigned long lastValidFixMillis = 0;
 unsigned long lastCharReceived = 0;
 bool everHadFix = false;
 const unsigned long GPS_FIX_TIMEOUT = 10000; // ms
 
 
-// -------------------- Helpers: distance --------------------
-// Compute min distance from current point to rectangle edges
-// Approximate conversion of lat/lon to local XY (meters) relative to a reference point
-void latLonToXY(double lat, double lon, double lat0, double lon0, double &x, double &y) {
-  const double R = 6371000.0; // Earth radius in meters
-  double dLat = radians(lat - lat0);
-  double dLon = radians(lon - lon0);
-  double meanLat = radians((lat + lat0) / 2.0);
-  x = dLon * cos(meanLat) * R;
-  y = dLat * R;
-}
-
-// Distance from point P to segment AB in XY plane
-double pointToSegmentDist(double px, double py, double ax, double ay, double bx, double by) {
-  double dx = bx - ax;
-  double dy = by - ay;
-  if (dx == 0 && dy == 0) {
-    // A and B are the same point
-    dx = px - ax;
-    dy = py - ay;
-    return sqrt(dx*dx + dy*dy);
-  }
-  double t = ((px - ax) * dx + (py - ay) * dy) / (dx*dx + dy*dy);
-  if (t < 0) {
-    dx = px - ax;
-    dy = py - ay;
-  } else if (t > 1) {
-    dx = px - bx;
-    dy = py - by;
-  } else {
-    double projx = ax + t * dx;
-    double projy = ay + t * dy;
-    dx = px - projx;
-    dy = py - projy;
-  }
-  return sqrt(dx*dx + dy*dy);
-}
-
-double distanceToRectangle(double lat, double lon) {
-  // Reference point: first corner
-  double lat0 = runway[0].lat;
-  double lon0 = runway[0].lon;
-
-  // Convert test point
-  double px, py;
-  latLonToXY(lat, lon, lat0, lon0, px, py);
-
-  // Convert polygon
-  double polyX[4], polyY[4];
-  for (int i = 0; i < 4; i++) {
-    latLonToXY(runway[i].lat, runway[i].lon, lat0, lon0, polyX[i], polyY[i]);
-  }
-
-  // Check if inside polygon (simple ray casting in XY)
-  bool inside = false;
-  for (int i = 0, j = 3; i < 4; j = i++) {
-    if (((polyY[i] > py) != (polyY[j] > py)) &&
-        (px < (polyX[j] - polyX[i]) * (py - polyY[i]) / (polyY[j] - polyY[i]) + polyX[i]))
-      inside = !inside;
-  }
-  if (inside) return 0.0;
-
-  // Compute min distance to edges
-  double minDist = 1e9;
-  for (int i = 0; i < 4; i++) {
-    int j = (i+1) % 4;
-    double d = pointToSegmentDist(px, py, polyX[i], polyY[i], polyX[j], polyY[j]);
-    if (d < minDist) minDist = d;
-  }
-  return minDist;
-}
+// -------------------- Variables: Mute logic --------------------
+bool isMuted = false;
 
 
 // -------------------- Setup --------------------
@@ -142,11 +73,12 @@ void setup() {
   lcd.setCursor(0,0);
   lcd.print("<!< GPX RIAD >!>");
 
-  // LEDs and buzzer
+  // LEDs, Buzzer and Buttons
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_YELLOW, OUTPUT);
   pinMode(LED_RED, OUTPUT);
   pinMode(BUZZER, OUTPUT);
+  pinMode(BTN_MUTE, INPUT);
 
   digitalWrite(LED_GREEN, LOW);
   digitalWrite(LED_YELLOW, LOW);
@@ -171,7 +103,9 @@ void loop() {
   bool gotRecentFix = (millis() - lastValidFixMillis < GPS_FIX_TIMEOUT);
   bool hasFreshFix = everHadFix && gotRecentChars && gotRecentFix;
 
-  lcd.clear(); 
+  if (digitalRead(BTN_MUTE) == HIGH) {
+    isMuted = true;
+  }
 
   if (hasFreshFix) {
     double lat = gps.location.lat();
@@ -184,39 +118,48 @@ void loop() {
     double dist = distanceToRectangle(lat, lon);
 
     // Display Text
+    lcd.setCursor(0,0);
+    lcd.print("GPS OK - ");
+    
     lcd.setCursor(0,1);
     lcd.print("DIST: ");
     lcd.print(dist, 1);
-    lcd.print(" m");
-
-    lcd.setCursor(0,0);
-    lcd.print("GPS OK - ");
+    lcd.print(" m      ");
 
     // LED + Buzzer logic
-    if (dist == 0) {
-      lcd.print("PISTA!");
+    if (dist <= 0) {
+      lcd.print("PISTA! ");
       // Green Light
       digitalWrite(LED_GREEN, LOW);
       digitalWrite(LED_YELLOW, LOW);
       digitalWrite(LED_RED, HIGH);
-      // Beeping buzzer - 4 Hz
-      digitalWrite(LED_PIN, ((millis() / 250) % 2 == 0) ? HIGH : LOW);
+      // Buzzer
+      if (!isMuted) {
+        digitalWrite(BUZZER, ((millis() / 250) % 2 == 0) ? HIGH : LOW); // 4 Hz beep
+      } else {
+        digitalWrite(BUZZER, LOW);
+      }
     } else if (dist <= WARNING_RADIUS) {
       lcd.print("ATENCAO!");
       // Yellow Light
       digitalWrite(LED_GREEN, LOW);
       digitalWrite(LED_RED, LOW);
       digitalWrite(LED_YELLOW, HIGH);
-      // Beeping buzzer - 2 Hz
-      digitalWrite(LED_PIN, ((millis() / 500) % 2 == 0) ? HIGH : LOW);
+      // Buzzer
+      if (!isMuted) {
+        digitalWrite(BUZZER, ((millis() / 500) % 2 == 0) ? HIGH : LOW); // 2 Hz beep
+      } else {
+        digitalWrite(BUZZER, LOW);
+      }
     } else {
-      lcd.print("LIVRE");
+      lcd.print("LIVRE  ");
       // Red Light
       digitalWrite(LED_GREEN, HIGH);
       digitalWrite(LED_YELLOW, LOW);
       digitalWrite(LED_RED, LOW);
       // No buzzer
       digitalWrite(BUZZER, LOW);
+      isMuted = false; // Reset mute when free
     }
 
   } else {
@@ -225,15 +168,10 @@ void loop() {
 
     // Display info
     lcd.setCursor(0,1);
-    if (elapsed == 0) {
-      lcd.print("STARTING GPS");
-    } else if (elapsed == 1) {
-      lcd.print("STARTING GPS.");
-    } else if (elapsed == 2) {
-      lcd.print("STARTING GPS..");
-    } else if (elapsed == 3) {
-      lcd.print("STARTING GPS...");
-    }
+    if (elapsed == 0) lcd.print("STARTING GPS   ");
+    else if (elapsed == 1) lcd.print("STARTING GPS.  ");
+    else if (elapsed == 2) lcd.print("STARTING GPS.. ");
+    else if (elapsed == 3) lcd.print("STARTING GPS...");
 
     // Reset outputs
     digitalWrite(LED_GREEN, LOW);
