@@ -70,9 +70,6 @@ void setup() {
   lcd.init();
   lcd.backlight();
 
-  lcd.setCursor(0,0);
-  lcd.print("<!< GPX RIAD >!>");
-
   // LEDs, Buzzer and Buttons
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_YELLOW, OUTPUT);
@@ -118,14 +115,14 @@ void loop() {
     double dist = distanceToRectangle(lat, lon);
 
     // Display Text
-    lcd.setCursor(0,0);
-    lcd.print("GPS OK - ");
-    
     lcd.setCursor(0,1);
     lcd.print("DIST: ");
     lcd.print(dist, 1);
     lcd.print(" m      ");
 
+    lcd.setCursor(0,0);
+    lcd.print("GPS OK - ");
+    
     // LED + Buzzer logic
     if (dist <= 0) {
       lcd.print("PISTA! ");
@@ -163,6 +160,9 @@ void loop() {
     }
 
   } else {
+    lcd.setCursor(0,0);
+    lcd.print("<!< GPX RIAD >!>");
+
     // Searching for satellites
     int elapsed = (millis() / 1000) % 4;
 
