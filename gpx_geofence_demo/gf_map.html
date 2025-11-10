@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_f1911ebf3c0ab18d24c9046c9a2239e1 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_f1911ebf3c0ab18d24c9046c9a2239e1" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_f1911ebf3c0ab18d24c9046c9a2239e1 = L.map(
+                "map_f1911ebf3c0ab18d24c9046c9a2239e1",
+                {
+                    center: [-21.762626499999996, -48.402566500000006],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 16,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_908e4844598cd4a3d2b50733807f9d09 = L.tileLayer(
+                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                {
+  "minZoom": 0,
+  "maxZoom": 18,
+  "maxNativeZoom": 18,
+  "noWrap": false,
+  "attribution": "Tiles \u00a9 Esri \u2014 Sources: Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_908e4844598cd4a3d2b50733807f9d09.addTo(map_f1911ebf3c0ab18d24c9046c9a2239e1);
+        
+    
+            var tile_layer_9622002774a2430ab0f21f1c517277e7 = L.tileLayer(
+                "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+                {
+  "minZoom": 0,
+  "maxZoom": 18,
+  "maxNativeZoom": 18,
+  "noWrap": false,
+  "attribution": "\u00a9 Esri",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_9622002774a2430ab0f21f1c517277e7.addTo(map_f1911ebf3c0ab18d24c9046c9a2239e1);
+        
+    
+            var tile_layer_6e2a51571bc0a28283c63cc6053d3aed = L.tileLayer(
+                "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",
+                {
+  "minZoom": 0,
+  "maxZoom": 18,
+  "maxNativeZoom": 18,
+  "noWrap": false,
+  "attribution": "\u00a9 Esri",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_6e2a51571bc0a28283c63cc6053d3aed.addTo(map_f1911ebf3c0ab18d24c9046c9a2239e1);
+        
+    
+            var layer_control_68dbbcab4673928ebf6d851689a3d820_layers = {
+                base_layers : {
+                    "Esri World Imagery" : tile_layer_908e4844598cd4a3d2b50733807f9d09,
+                },
+                overlays :  {
+                    "Boundaries \u0026 Places (labels)" : tile_layer_9622002774a2430ab0f21f1c517277e7,
+                    "Transportation (labels)" : tile_layer_6e2a51571bc0a28283c63cc6053d3aed,
+                },
+            };
+            let layer_control_68dbbcab4673928ebf6d851689a3d820 = L.control.layers(
+                layer_control_68dbbcab4673928ebf6d851689a3d820_layers.base_layers,
+                layer_control_68dbbcab4673928ebf6d851689a3d820_layers.overlays,
+                {
+  "position": "topright",
+  "collapsed": true,
+  "autoZIndex": true,
+}
+            ).addTo(map_f1911ebf3c0ab18d24c9046c9a2239e1);
+
+        
+    
+            var polygon_14a92b91b67815fce44d222140ad6e65 = L.polygon(
+                [[-21.762011557755084, -48.40341592611154], [-21.761980366770267, -48.40341496873257], [-21.761949416385537, -48.40341072012376], [-21.761919008898232, -48.40340322178402], [-21.761889441302984, -48.403392546952745], [-21.761861002390866, -48.40337879989442], [-21.761833969928837, -48.40336211488016], [-21.761808607946723, -48.40334265487628], [-21.761785164158464, -48.403320609952466], [-21.76176386754265, -48.40329619542535], [-21.761744926106118, -48.40326964975548], [-21.76172852485234, -48.40324123221826], [-21.7617148239745, -48.40321122037154], [-21.761703957290877, -48.40317990734478], [-21.761696030937856, -48.40314759897601], [-21.761691122333286, -48.40311461082478], [-21.761689279420313, -48.40308126509003], [-21.76168027915655, -48.4020842672829], [-21.76168148577223, -48.402051298921236], [-21.761685689275463, -48.40201861356725], [-21.761692849613084, -48.40198652266611], [-21.761702898557452, -48.40195533199884], [-21.761715740356575, -48.40192533876873], [-21.761731252646406, -48.40189682876944], [-21.76174928761685, -48.40187007366179], [-21.761769673420083, -48.401845328385285], [-21.761792215808047, -48.40182282872885], [-21.761816699983306, -48.401802789084094], [-21.761842892645728, -48.401785400402474], [-21.761870544215522, -48.40177082837568], [-21.76189939121135, -48.40175921185685], [-21.761929158760914, -48.40175066153738], [-21.761959563220092, -48.40174525889212], [-21.76199031487571, -48.40174305540301], [-21.763235315205637, -48.4017190524657], [-21.763266151527834, -48.4017200717816], [-21.76329674771757, -48.401724307938416], [-21.763326811655787, -48.4017317204932], [-21.76335605630501, -48.401742238675965], [-21.763384202449785, -48.40175576206535], [-21.76341098136261, -48.40177216154731], [-21.763436137369617, -48.40179128054785], [-21.763459430291668, -48.401812936527826], [-21.76348063773753, -48.40183692272578], [-21.7634995572272, -48.401863010131954], [-21.763516008125112, -48.40189094967485], [-21.763529833364817, -48.401920474599244], [-21.76354090094858, -48.40195130301307], [-21.76354910520771, -48.40198314057889], [-21.763554367811388, -48.40201568332416], [-21.763556638514608, -48.40204862054345], [-21.763579638282472, -48.40304162273513], [-21.76357887959171, -48.40307486757001], [-21.76357507291892, -48.403107871688405], [-21.763568255112492, -48.40314031561464], [-21.76355849216817, -48.4031718852958], [-21.763545878590254, -48.40320227514172], [-21.763530536476694, -48.403231190983206], [-21.76351261433728, -48.403258352919465], [-21.763492285655982, -48.4032834980276], [-21.763469747211623, -48.40330638290764], [-21.763445217173103, -48.40332678603863], [-21.763418932987477, -48.40334450992288], [-21.763391149081524, -48.40335938299767], [-21.763362134398875, -48.403371261295916], [-21.763332169796673, -48.40338002983968], [-21.763301545326943, -48.40338560375306], [-21.763270557428893, -48.40338792908369], [-21.762011557755084, -48.40341592611154]],
+                {"bubblingMouseEvents": true, "color": "orange", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "orange", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 3}
+            ).addTo(map_f1911ebf3c0ab18d24c9046c9a2239e1);
+        
+    
+        var popup_d336a7636e773d574001b4016c913b3b = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_263935eaeaaed733749cffa649ab7069 = $(`<div id="html_263935eaeaaed733749cffa649ab7069" style="width: 100.0%; height: 100.0%;">35m Warning Zone</div>`)[0];
+                popup_d336a7636e773d574001b4016c913b3b.setContent(html_263935eaeaaed733749cffa649ab7069);
+            
+        
+
+        polygon_14a92b91b67815fce44d222140ad6e65.bindPopup(popup_d336a7636e773d574001b4016c913b3b)
+        ;
+
+        
+    
+    
+            var polygon_a4139859001edf405770fda4c13c494d = L.polygon(
+                [[-21.762005, -48.403078], [-21.761996, -48.402081], [-21.763241, -48.402057], [-21.763264, -48.40305]],
+                {"bubblingMouseEvents": true, "color": "red", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "red", "fillOpacity": 0.4, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 3}
+            ).addTo(map_f1911ebf3c0ab18d24c9046c9a2239e1);
+        
+    
+        var popup_8a3803c6b74386a804e85e9a7c583202 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_c8f79305aa32ba0c608b156d4b52a5de = $(`<div id="html_c8f79305aa32ba0c608b156d4b52a5de" style="width: 100.0%; height: 100.0%;">Runway Exclusion Zone</div>`)[0];
+                popup_8a3803c6b74386a804e85e9a7c583202.setContent(html_c8f79305aa32ba0c608b156d4b52a5de);
+            
+        
+
+        polygon_a4139859001edf405770fda4c13c494d.bindPopup(popup_8a3803c6b74386a804e85e9a7c583202)
+        ;
+
+        
+    
+</script>
+</html>

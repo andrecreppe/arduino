@@ -2,12 +2,13 @@
 #include <LiquidCrystal_I2C.h>
 #include <TinyGPS++.h>
 #include <HardwareSerial.h>
+
 #include "geofence_functions.h"
 
 
 // -------------------- LCD Display setup --------------------
 #define LCD_COLUMNS 20
-#define LDC_ROWS 2
+#define LDC_ROWS 4
 #define LCD_ADDRESS 0x27
 // SDA = 21 ; SCL = 22
 LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLUMNS, LDC_ROWS);
