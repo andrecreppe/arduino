@@ -6,7 +6,7 @@
 #include <SD.h>
 
 #include "geofence.h"
-#include "logger.h"
+#include "gps_logger.h"
 
 
 // -------------------- LCD Display setup --------------------
@@ -81,7 +81,7 @@ void setup() {
   GPSserial.begin(9600, SERIAL_8N1, RXD2, TXD2);
 
   // SD Card + Logger
-  if (!initGPSLogger()) {
+  if (!initGPSLogger(SD_CS)) {
     Serial.println("GPS logger init failed");
   } else {
     Serial.println("GPS logger ready");
@@ -136,7 +136,7 @@ void loop() {
     double dist = distanceToRectangle(lat, lon);
 
     // Log data
-    logGPSFix(gps, dist)
+    logGPSFix(gps, dist);
 
     // Display Text
     lcd.setCursor(0,1);

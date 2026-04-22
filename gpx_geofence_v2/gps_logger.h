@@ -9,7 +9,7 @@
 
 
 // -------------------- Internal State --------------------
-String filename = "/gps_log.csv"
+String filename = "/gps_log.csv";
 static File gpsLogFile;
 
 static char logBuffer[LOG_BUFFER_SIZE];
@@ -18,7 +18,9 @@ static int lastLoggedSecond = -1;
 
 
 // -------------------- Helpers --------------------
-inline String gpsTimestamp(const TinyGPSPlus &gps) {
+inline String gpsTimestamp(const TinyGPSPlus &globalgps) {
+  TinyGPSPlus gps = globalgps;
+
   char ts[25];
   snprintf(ts, sizeof(ts),
            "%04d-%02d-%02d %02d:%02d:%02d",
@@ -51,8 +53,8 @@ inline void appendToGPSBuffer(const String &line) {
 
 
 // -------------------- Init (File Rotation Per Boot) --------------------
-inline bool initGPSLogger() {
-  if (!SD.begin(SD_CS))
+inline bool initGPSLogger(const int &sd_cs) {
+  if (!SD.begin(sd_cs))
     return false;
 
   // File rotation using millis at boot (sufficient + deterministic)
@@ -70,8 +72,11 @@ inline bool initGPSLogger() {
 }
 
 // -------------------- Public Logging Function --------------------
-inline void logGPSFix(const TinyGPSPlus &gps,
+inline void logGPSFix(const TinyGPSPlus &globalgps,
                       double distToRectangle) {
+
+  TinyGPSPlus gps = globalgps;
+
   if (!gps.location.isValid() || !gps.time.isValid() || !gps.date.isValid())
     return;
 
